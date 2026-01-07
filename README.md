@@ -1,5 +1,5 @@
 
-# 🏥 End-to-End Medical Triage Assistant (with Explainability)
+# End-to-End Medical Triage Assistant (with Explainability)
 
 ## LAB #14 – Complex Computing Activity
 
