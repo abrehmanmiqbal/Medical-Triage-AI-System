@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Management - Heart Triage</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .header-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .patient-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            border-left: 5px solid #007bff;
+        }
+        .patient-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .risk-badge {
+            font-size: 0.9rem;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .stats-card i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+        .patient-details {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .details-row {
+            border-bottom: 1px solid #dee2e6;
+            padding: 8px 0;
+        }
+        .details-row:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-heartbeat me-2"></i>Heart Triage AI
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a href="/" class="nav-link">Dashboard</a>
+                <a href="/predict" class="nav-link">Assessment</a>
+                <a href="/patients" class="nav-link active">Patients</a>
+                <a href="/insights" class="nav-link">Insights</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Header -->
+        <div class="header-card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-users me-2"></i>Patient Management</h1>
+                    <p class="lead mb-0">View and manage all patient assessments</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-light" onclick="refreshData()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                    </button>
+                    <button class="btn btn-light" onclick="exportData()">
+                        <i class="fas fa-download me-2"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card text-primary">
+                    <i class="fas fa-users"></i>
+                    <h3 id="totalPatients">0</h3>
+                    <p>Total Patients</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-success">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3 id="lowRiskPatients">0</h3>
+                    <p>Low Risk</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3 id="mediumRiskPatients">0</h3>
+                    <p>Medium Risk</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-danger">
+                    <i class="fas fa-ambulance"></i>
+                    <h3 id="highRiskPatients">0</h3>
+                    <p>High Risk</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Patient List -->
+            <div class="col-lg-8">
+                <div class="chart-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4><i class="fas fa-list me-2"></i>Patient List</h4>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-primary btn-sm" onclick="filterPatients('all')">All</button>
+                            <button class="btn btn-outline-success btn-sm" onclick="filterPatients('low')">Low Risk</button>
+                            <button class="btn btn-outline-warning btn-sm" onclick="filterPatients('medium')">Medium Risk</button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="filterPatients('high')">High Risk</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="patientsTable">
+                            <thead>
+                                <tr>
+                                    <th>Patient ID</th>
+                                    <th>Age</th>
+                                    <th>Cholesterol</th>
+                                    <th>BP</th>
+                                    <th>Risk Level</th>
+                                    <th>Date & Time</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patientsTableBody">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <nav>
+                            <ul class="pagination justify-content-center" id="pagination">
+                                <!-- Pagination will be generated by JavaScript -->
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patient Details Panel -->
+            <div class="col-lg-4">
+                <div class="chart-container" style="position: sticky; top: 20px;">
+                    <h4><i class="fas fa-user-circle me-2"></i>Patient Details</h4>
+                    <div id="patientDetails" class="text-center text-muted">
+                        <i class="fas fa-user fa-3x mb-3"></i>
+                        <p>Select a patient to view details</p>
+                    </div>
+                </div>
+                
+                <!-- Risk Distribution Chart -->
+                <div class="chart-container mt-4">
+                    <h4><i class="fas fa-chart-pie me-2"></i>Risk Distribution</h4>
+                    <div id="riskChart" style="height: 250px;">
+                        <!-- Chart will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Detailed View -->
+    <div class="modal fade" id="patientModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Patient Assessment Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="printReport()">
+                        <i class="fas fa-print me-2"></i>Print Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        let allPatients = [];
+        let currentPage = 1;
+        const patientsPerPage = 10;
+        let riskChart = null;
+
+        // Load patient data
+        async function loadPatients() {
+            try {
+                const response = await fetch('/api/patients');
+                allPatients = await response.json();
+                allPatients.reverse(); // Show newest first
+                
+                updateStats();
+                renderPatients();
+                renderRiskChart();
+                
+            } catch (error) {
+                console.error('Error loading patients:', error);
+                document.getElementById('patientsTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Error loading patient data
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('totalPatients').textContent = allPatients.length;
+            
+            const lowRisk = allPatients.filter(p => p.prediction.risk_level === 0).length;
+            const mediumRisk = allPatients.filter(p => p.prediction.risk_level === 1).length;
+            const highRisk = allPatients.filter(p => p.prediction.risk_level === 2).length;
+            
+            document.getElementById('lowRiskPatients').textContent = lowRisk;
+            document.getElementById('mediumRiskPatients').textContent = mediumRisk;
+            document.getElementById('highRiskPatients').textContent = highRisk;
+        }
+
+        // Render patients table with pagination
+        function renderPatients(filter = 'all') {
+            let filteredPatients = allPatients;
+            
+            if (filter === 'low') {
+                filteredPatients = allPatients.filter(p => p.prediction.risk_level === 0);
+            } else if (filter === 'medium') {
+                filteredPatients = allPatients.filter(p => p.prediction.risk_level === 1);
+            } else if (filter === 'high') {
+                filteredPatients = allPatients.filter(p => p.prediction.risk_level === 2);
+            }
+            
+            const totalPages = Math.ceil(filteredPatients.length / patientsPerPage);
+            const startIndex = (currentPage - 1) * patientsPerPage;
+            const endIndex = startIndex + patientsPerPage;
+            const pagePatients = filteredPatients.slice(startIndex, endIndex);
+            
+            const tableBody = document.getElementById('patientsTableBody');
+            tableBody.innerHTML = '';
+            
+            if (pagePatients.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            <i class="fas fa-user-slash me-2"></i>
+                            No patients found
+                        </td>
+                    </tr>
+                `;
+            } else {
+                pagePatients.forEach(patient => {
+                    const riskLevel = patient.prediction.risk_level;
+                    const riskColor = riskLevel === 0 ? 'success' : 
+                                     riskLevel === 1 ? 'warning' : 'danger';
+                    
+                    const row = document.createElement('tr');
+                    row.style.cursor = 'pointer';
+                    row.onclick = () => showPatientDetails(patient);
+                    
+                    row.innerHTML = `
+                        <td><strong>${patient.id}</strong></td>
+                        <td>${patient.data.age}</td>
+                        <td>${patient.data.chol}</td>
+                        <td>${patient.data.trestbps}</td>
+                        <td>
+                            <span class="badge bg-${riskColor} risk-badge">
+                                ${patient.prediction.risk_label}
+                            </span>
+                        </td>
+                        <td>${new Date(patient.timestamp).toLocaleString()}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="showPatientModal(event, '${patient.id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+            
+            renderPagination(totalPages, filter);
+        }
+
+        // Render pagination controls
+        function renderPagination(totalPages, filter) {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            
+            if (totalPages <= 1) return;
+            
+            // Previous button
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `
+                <a class="page-link" href="#" onclick="changePage(event, ${currentPage - 1}, '${filter}')">
+                    &laquo;
+                </a>
+            `;
+            pagination.appendChild(prevLi);
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const li = document.createElement('li');
+                li.className = `page-item ${currentPage === i ? 'active' : ''}`;
+                li.innerHTML = `
+                    <a class="page-link" href="#" onclick="changePage(event, ${i}, '${filter}')">
+                        ${i}
+                    </a>
+                `;
+                pagination.appendChild(li);
+            }
+            
+            // Next button
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextLi.innerHTML = `
+                <a class="page-link" href="#" onclick="changePage(event, ${currentPage + 1}, '${filter}')">
+                    &raquo;
+                </a>
+            `;
+            pagination.appendChild(nextLi);
+        }
+
+        // Change page
+        function changePage(event, page, filter) {
+            event.preventDefault();
+            currentPage = page;
+            renderPatients(filter);
+        }
+
+        // Filter patients by risk level
+        function filterPatients(level) {
+            currentPage = 1;
+            renderPatients(level);
+        }
+
+        // Show patient details in right panel
+        function showPatientDetails(patient) {
+            const riskLevel = patient.prediction.risk_level;
+            const riskColor = riskLevel === 0 ? '#2ecc71' : 
+                            riskLevel === 1 ? '#f39c12' : '#e74c3c';
+            
+            const detailsDiv = document.getElementById('patientDetails');
+            detailsDiv.innerHTML = `
+                <div class="text-center">
+                    <div class="mb-3">
+                        <span class="badge" style="background-color: ${riskColor}; font-size: 1rem; padding: 8px 20px;">
+                            ${patient.prediction.risk_label}
+                        </span>
+                    </div>
+                    <h5>${patient.id}</h5>
+                    <p class="text-muted">Assessed on ${new Date(patient.timestamp).toLocaleDateString()}</p>
+                </div>
+                
+                <div class="patient-details mt-3">
+                    <div class="details-row">
+                        <strong>Age:</strong> ${patient.data.age} years
+                    </div>
+                    <div class="details-row">
+                        <strong>Sex:</strong> ${patient.data.sex === 1 ? 'Male' : 'Female'}
+                    </div>
+                    <div class="details-row">
+                        <strong>Cholesterol:</strong> ${patient.data.chol} mg/dL
+                    </div>
+                    <div class="details-row">
+                        <strong>Blood Pressure:</strong> ${patient.data.trestbps} mmHg
+                    </div>
+                    <div class="details-row">
+                        <strong>Max Heart Rate:</strong> ${patient.data.thalach}
+                    </div>
+                    <div class="details-row">
+                        <strong>ST Depression:</strong> ${patient.data.oldpeak}
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <p><strong>Recommendation:</strong></p>
+                    <p class="text-muted">${patient.prediction.description}</p>
+                </div>
+                
+                <button class="btn btn-primary w-100 mt-3" onclick="showPatientModal(event, '${patient.id}')">
+                    <i class="fas fa-chart-line me-2"></i>View Full Report
+                </button>
+            `;
+        }
+
+        // Show patient modal
+        async function showPatientModal(event, patientId) {
+            event.stopPropagation();
+            
+            const patient = allPatients.find(p => p.id === patientId);
+            if (!patient) return;
+            
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Patient Information</h6>
+                        <table class="table table-sm">
+                            <tr><td>ID:</td><td><strong>${patient.id}</strong></td></tr>
+                            <tr><td>Assessment Date:</td><td>${new Date(patient.timestamp).toLocaleString()}</td></tr>
+                            <tr><td>Risk Level:</td>
+                                <td>
+                                    <span class="badge" style="background-color: ${patient.prediction.color}">
+                                        ${patient.prediction.risk_label}
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Clinical Parameters</h6>
+                        <table class="table table-sm">
+                            <tr><td>Age:</td><td>${patient.data.age} years</td></tr>
+                            <tr><td>Cholesterol:</td><td>${patient.data.chol} mg/dL</td></tr>
+                            <tr><td>Blood Pressure:</td><td>${patient.data.trestbps} mmHg</td></tr>
+                            <tr><td>Max Heart Rate:</td><td>${patient.data.thalach}</td></tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Risk Assessment Details</h6>
+                    <div class="alert" style="background-color: ${patient.prediction.color}; color: white;">
+                        <strong>${patient.prediction.description}</strong>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>Probability Distribution</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Low Risk:</td>
+                                <td>${(patient.prediction.probability[0] * 100).toFixed(1)}%</td>
+                            </tr>
+                            <tr>
+                                <td>Medium Risk:</td>
+                                <td>${(patient.prediction.probability[1] * 100).toFixed(1)}%</td>
+                            </tr>
+                            <tr>
+                                <td>High Risk:</td>
+                                <td>${(patient.prediction.probability[2] * 100).toFixed(1)}%</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Risk Factors</h6>
+                        <ul class="list-group list-group-flush">
+                            ${patient.explanation.risk_factors && patient.explanation.risk_factors.length > 0 ?
+                                patient.explanation.risk_factors.map(factor => `<li class="list-group-item">${factor}</li>`).join('')
+                                : '<li class="list-group-item text-muted">No specific risk factors identified</li>'
+                            }
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Recommendations</h6>
+                    <div class="alert alert-info">
+                        <ul class="mb-0">
+                            ${patient.explanation.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Raw Data</h6>
+                    <pre class="bg-light p-3" style="font-size: 0.8rem;">${JSON.stringify(patient.data, null, 2)}</pre>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('patientModal'));
+            modal.show();
+        }
+
+        // Render risk distribution chart
+        function renderRiskChart() {
+            if (riskChart) {
+                riskChart.destroy();
+            }
+            
+            const lowRisk = allPatients.filter(p => p.prediction.risk_level === 0).length;
+            const mediumRisk = allPatients.filter(p => p.prediction.risk_level === 1).length;
+            const highRisk = allPatients.filter(p => p.prediction.risk_level === 2).length;
+            
+            const ctx = document.createElement('canvas');
+            document.getElementById('riskChart').innerHTML = '';
+            document.getElementById('riskChart').appendChild(ctx);
+            
+            riskChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+                    datasets: [{
+                        data: [lowRisk, mediumRisk, highRisk],
+                        backgroundColor: ['#2ecc71', '#f39c12', '#e74c3c'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Refresh data
+        function refreshData() {
+            loadPatients();
+        }
+
+        // Export data
+        function exportData() {
+            if (allPatients.length === 0) {
+                alert('No patient data to export');
+                return;
+            }
+            
+            const csvContent = convertToCSV(allPatients);
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `heart_triage_patients_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        // Convert patients to CSV
+        function convertToCSV(patients) {
+            const headers = ['ID', 'Timestamp', 'Age', 'Sex', 'Cholesterol', 'Blood Pressure', 
+                           'Max Heart Rate', 'ST Depression', 'Risk Level', 'Risk Label', 'Probability'];
+            
+            const rows = patients.map(patient => [
+                patient.id,
+                patient.timestamp,
+                patient.data.age,
+                patient.data.sex,
+                patient.data.chol,
+                patient.data.trestbps,
+                patient.data.thalach,
+                patient.data.oldpeak,
+                patient.prediction.risk_level,
+                patient.prediction.risk_label,
+                patient.prediction.probability.join('|')
+            ]);
+            
+            return [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+        }
+
+        // Print report
+        function printReport() {
+            window.print();
+        }
+
+        // Load patients on page load
+        document.addEventListener('DOMContentLoaded', loadPatients);
+    </script>
+</body>
+</html>

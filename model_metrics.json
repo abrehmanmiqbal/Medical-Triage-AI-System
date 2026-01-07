@@ -1,0 +1,8 @@
+{
+  "best_model": "Random Forest",
+  "accuracy": 1.0,
+  "f1_score": 1.0,
+  "training_date": "2026-01-06T14:44:13.230417",
+  "n_features": 30,
+  "n_samples": 1025
+}
