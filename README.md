@@ -1,7 +1,7 @@
 
 # 🏥 End-to-End Medical Triage Assistant (with Explainability)
 
-## 📌 LAB #14 – Complex Computing Activity
+## LAB #14 – Complex Computing Activity
 
 ### Course Objective
 Design and implement a complex, multi-faceted machine learning system demonstrating **end-to-end ML mastery**, including:
@@ -13,7 +13,7 @@ Design and implement a complex, multi-faceted machine learning system demonstrat
 
 ---
 
-## 🎯 Project Overview
+## Project Overview
 
 This project implements an **AI-powered Medical Triage Assistant** that classifies patients into:
 - **Low Risk**
@@ -29,9 +29,9 @@ The system is designed to **support clinical decision-making**, not replace clin
 
 ---
 
-## 📂 Dataset
+## Dataset
 
-- **Source**: Heart Disease Dataset  
+- **Source**: Kaggle 
 - **Type**: Tabular EMR-style data  
 - **Features include**:
   - Age
@@ -49,43 +49,43 @@ The system is designed to **support clinical decision-making**, not replace clin
 
 ---
 
-## 🧠 Integrated ML Concepts (Lab 1–12)
+## Integrated ML Concepts (Lab 1–12)
 
 This project integrates **more than three required lab concepts**:
 
-### ✅ 1. Data Preprocessing
+### 1. Data Preprocessing
 - Missing value imputation
 - Feature scaling (StandardScaler)
 - Categorical encoding
 - Class imbalance handling (SMOTE)
 
-### ✅ 2. Model Building
+### 2. Model Building
 Multiple models trained and compared:
 - Logistic Regression
 - Support Vector Machine (SVM)
 - Random Forest (selected as best model)
 - Naive Bayes
 
-### ✅ 3. Model Evaluation
+### 3. Model Evaluation
 - Accuracy
 - Precision, Recall, F1-score
 - ROC Curves
 - Precision-Recall Curves
 - Probability calibration
 
-### ✅ 4. Uncertainty Estimation
+### 4. Uncertainty Estimation
 - Ensemble-based uncertainty using Random Forest
 - Mean probability & standard deviation
 - Identification of low-confidence and high-uncertainty predictions
 
-### ✅ 5. Model Interpretability
+### 5. Model Interpretability
 - Feature importance analysis
 - Explainable outputs for clinicians
 - Risk-based interpretation
 
 ---
 
-## 📊 Key Visualizations
+## Key Visualizations
 
 - ROC Curves
 - Precision-Recall Curves
@@ -96,7 +96,7 @@ Multiple models trained and compared:
 
 ---
 
-## 🩺 Clinical Interpretation
+## Clinical Interpretation
 
 The model provides:
 - **Confidence score** for each prediction
@@ -109,7 +109,7 @@ The model provides:
 
 ---
 
-## ⚠️ Ethical Considerations
+## Ethical Considerations
 
 - AI is **decision-support**, not decision-maker
 - Risk of bias due to dataset limitations
